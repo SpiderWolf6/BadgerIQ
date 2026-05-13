@@ -54,7 +54,7 @@ export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps)
 
       {/* Report list */}
       <nav className="flex-1 overflow-y-auto py-1">
-        {entries.map((entry, i) => {
+        {entries.map((entry) => {
           if (entry.type === "no-report") {
             // Maryland — no report, non-clickable
             return (
