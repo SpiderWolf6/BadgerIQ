@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /mnt/c/Users/soham/code/badgeriq/)",
+      "Read(//mnt/c/Users/soham/code/**)",
+      "PowerShell(cd \"c:\\\\Users\\\\soham\\\\code\\\\badgeriq\"; $job = Start-Job -ScriptBlock { Set-Location \"c:\\\\Users\\\\soham\\\\code\\\\badgeriq\"; npm run dev 2>&1 }; Start-Sleep -Seconds 12; Receive-Job $job)",
+      "PowerShell(cd \"c:\\\\Users\\\\soham\\\\code\\\\badgeriq\"; $job = Start-Job -ScriptBlock { Set-Location \"c:\\\\Users\\\\soham\\\\code\\\\badgeriq\"; npm run dev 2>&1 }; Start-Sleep -Seconds 10; Receive-Job $job)"
+    ]
+  }
+}
