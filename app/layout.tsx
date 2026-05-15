@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Rajdhani, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -21,7 +22,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "BadgerIQ — Scout Intel",
+  title: "BadgerIQ",
   description: "Wisconsin Badgers Men's Soccer — Opponent Scouting Intelligence",
 };
 
@@ -35,7 +36,7 @@ export default function RootLayout({
       <body
         className={`${rajdhani.variable} ${ibmPlexMono.variable} ${ibmPlexSans.variable} antialiased bg-bg text-text`}
       >
-        {children}
+        <SessionProviderWrapper>{children}</SessionProviderWrapper>
       </body>
     </html>
   );

@@ -1,35 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (res.ok) {
-      router.push("/dashboard");
-    } else {
-      setError("ACCESS DENIED");
-      setLoading(false);
-    }
-  }
-
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center"
@@ -67,7 +41,7 @@ export default function LoginPage() {
                 IQ
               </span>
             </div>
-            <p className="label-mono mt-1" style={{ color: "#333" }}>
+            <p className="label-mono mt-1" style={{ color: "#555" }}>
               Scout Intel / Restricted Access
             </p>
           </div>
@@ -82,83 +56,40 @@ export default function LoginPage() {
             Authenticate
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="space-y-1">
-              <label className="label-mono block" style={{ color: "#333" }}>
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                className="w-full px-3 py-2 rounded font-mono text-sm outline-none transition-colors"
-                style={{
-                  background: "#0a0a0b",
-                  border: "1px solid #1a1a1c",
-                  color: "#e8e8ea",
-                  caretColor: "#c5050c",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#c5050c33")}
-                onBlur={(e) => (e.target.style.borderColor = "#1a1a1c")}
-              />
-            </div>
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            className="w-full flex items-center justify-center gap-3 py-2.5 rounded font-mono text-sm transition-colors"
+            style={{
+              background: "#0a0a0b",
+              border: "1px solid #1a1a1c",
+              color: "#e8e8ea",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#c5050c33";
+              (e.currentTarget as HTMLElement).style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#1a1a1c";
+              (e.currentTarget as HTMLElement).style.color = "#e8e8ea";
+            }}
+          >
+            {/* Google icon */}
+            <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+              <path d="M44.5 20H24v8.5h11.8C34.7 33.9 30 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.3-.2-2.7-.5-4z" fill="#FFC107"/>
+              <path d="M6.3 14.7l7 5.1C15.1 16.3 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3c-7.6 0-14.3 4.3-17.7 11.7z" fill="#FF3D00"/>
+              <path d="M24 45c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.7 35.9 27 37 24 37c-5.9 0-10.9-3.9-12.7-9.3l-7 5.4C8 40.5 15.4 45 24 45z" fill="#4CAF50"/>
+              <path d="M44.5 20H24v8.5h11.8c-.9 2.5-2.6 4.6-4.9 6l6.6 5.6C41.5 36.9 45 31 45 24c0-1.3-.2-2.7-.5-4z" fill="#1976D2"/>
+            </svg>
+            Sign in with Google
+          </button>
 
-            <div className="space-y-1">
-              <label className="label-mono block" style={{ color: "#333" }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full px-3 py-2 rounded font-mono text-sm outline-none transition-colors"
-                style={{
-                  background: "#0a0a0b",
-                  border: "1px solid #1a1a1c",
-                  color: "#e8e8ea",
-                  caretColor: "#c5050c",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#c5050c33")}
-                onBlur={(e) => (e.target.style.borderColor = "#1a1a1c")}
-              />
-            </div>
-
-            {error && (
-              <div
-                className="flex items-center gap-2 px-3 py-2 rounded"
-                style={{ background: "#140406", border: "1px solid #c5050c33" }}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: "#c5050c" }}
-                />
-                <span className="label-mono" style={{ color: "#c5050c" }}>
-                  {error}
-                </span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded font-display font-600 text-sm tracking-widest transition-colors mt-2"
-              style={{
-                background: loading ? "#0f0f11" : "#c5050c",
-                color: loading ? "#444" : "#fff",
-                border: "1px solid",
-                borderColor: loading ? "#1a1a1c" : "#c5050c",
-                cursor: loading ? "not-allowed" : "pointer",
-                letterSpacing: "0.08em",
-              }}
-            >
-              {loading ? "AUTHENTICATING..." : "ENTER"}
-            </button>
-          </form>
+          <p className="font-mono text-[9px] text-center mt-2" style={{ color: "#4a4a4a" }}>
+            Access restricted to authorized @wisc.edu accounts
+          </p>
         </div>
 
-        <p className="label-mono" style={{ color: "#222" }}>
+        <p className="label-mono" style={{ color: "#444" }}>
           Wisconsin Badgers Athletics — Internal Use Only
         </p>
       </div>
