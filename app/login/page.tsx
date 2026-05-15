@@ -42,7 +42,7 @@ export default function LoginPage() {
               </span>
             </div>
             <p className="label-mono mt-1" style={{ color: "#555" }}>
-              Scout Intel / Restricted Access
+              Wisconsin Badgers — Division I Men&#39;s Soccer
             </p>
           </div>
         </div>
