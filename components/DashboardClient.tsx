@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Topbar from "@/components/Topbar";
+import Topbar, { TopbarTab } from "@/components/Topbar";
 import Sidebar from "@/components/Sidebar";
 import ReportView from "@/components/ReportView";
+import StatsCorner from "@/components/stats/StatsCorner";
 import { Report } from "@/types/report";
 
 interface Props {
@@ -12,37 +13,33 @@ interface Props {
 
 export default function DashboardClient({ reports }: Props) {
   const [activeSlug, setActiveSlug] = useState(reports[0]?.slug ?? "");
-  const [activeTab, setActiveTab] = useState<"reports" | "comparison" | "players" | "aichat">("reports");
+  const [activeTab, setActiveTab] = useState<TopbarTab>("reports");
 
   const activeReport = reports.find((r) => r.slug === activeSlug) ?? reports[0];
 
   return (
-    <div
-      className="flex flex-col h-screen overflow-hidden"
-      style={{ background: "#0a0a0b" }}
-    >
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: "#0a0a0b" }}>
       <Topbar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          reports={reports}
-          activeSlug={activeSlug}
-          onSelect={setActiveSlug}
-        />
+        {/* Sidebar only shown on Reports tab */}
+        {activeTab === "reports" && (
+          <Sidebar reports={reports} activeSlug={activeSlug} onSelect={setActiveSlug} />
+        )}
 
         <main className="flex-1 overflow-hidden">
-          {activeReport ? (
-            <ReportView report={activeReport} />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <span
-                className="font-mono text-[10px] uppercase tracking-widest"
-                style={{ color: "#333" }}
-              >
-                Select a report
-              </span>
-            </div>
+          {activeTab === "reports" && (
+            activeReport ? (
+              <ReportView report={activeReport} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <span className="font-mono text-[12px] uppercase tracking-widest" style={{ color: "#555" }}>
+                  Select a report
+                </span>
+              </div>
+            )
           )}
+          {activeTab === "stats" && <StatsCorner />}
         </main>
       </div>
     </div>
