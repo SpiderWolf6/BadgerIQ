@@ -90,7 +90,7 @@ export default function LoginPage() {
         </div>
 
         <p className="label-mono" style={{ color: "#444" }}>
-          Wisconsin Badgers Athletics — Internal Use Only
+          Internal Use Only
         </p>
       </div>
     </div>
