@@ -4,7 +4,6 @@ import { useState } from "react";
 import Topbar, { TopbarTab } from "@/components/Topbar";
 import Sidebar from "@/components/Sidebar";
 import ReportView from "@/components/ReportView";
-import StatsCorner from "@/components/stats/StatsCorner";
 import { Report } from "@/types/report";
 
 interface Props {
@@ -39,7 +38,7 @@ export default function DashboardClient({ reports }: Props) {
               </div>
             )
           )}
-          {activeTab === "stats" && <StatsCorner />}
+          {activeTab === "stats" && null}
         </main>
       </div>
     </div>
