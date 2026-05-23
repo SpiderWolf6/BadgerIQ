@@ -69,7 +69,7 @@ export default function ReportView({ report }: ReportViewProps) {
           >
             <button
               onClick={() => setViewMode("parsed")}
-              className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-colors"
+              className="px-3 py-1.5 font-mono text-[13px] uppercase tracking-widest transition-colors"
               style={{
                 background: viewMode === "parsed" ? "#140406" : "#0f0f11",
                 color: viewMode === "parsed" ? "#c5050c" : "#555",
@@ -80,7 +80,7 @@ export default function ReportView({ report }: ReportViewProps) {
             </button>
             <button
               onClick={handlePdfView}
-              className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-colors"
+              className="px-3 py-1.5 font-mono text-[13px] uppercase tracking-widest transition-colors"
               style={{
                 background: viewMode === "pdf" ? "#140406" : "#0f0f11",
                 color: viewMode === "pdf" ? "#c5050c" : "#555",
@@ -94,20 +94,20 @@ export default function ReportView({ report }: ReportViewProps) {
         {/* Meta row: labeled fields */}
         <div className="flex items-center gap-5 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <span className="label-mono" style={{ color: "#333" }}>Date of Match</span>
-            <span className="font-mono text-[11px]" style={{ color: "#888" }}>{report.matchDate}</span>
+            <span className="label-mono" style={{ color: "#555" }}>Date of Match</span>
+            <span className="font-mono text-[13px]" style={{ color: "#888" }}>{report.matchDate}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="label-mono" style={{ color: "#333" }}>Opp Record</span>
-            <span className="font-mono text-[11px]" style={{ color: "#888" }}>{report.record}</span>
+            <span className="label-mono" style={{ color: "#555" }}>Opp Record</span>
+            <span className="font-mono text-[13px]" style={{ color: "#888" }}>{report.record}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="label-mono" style={{ color: "#333" }}>Opp Last Result</span>
-            <span className="font-mono text-[11px]" style={{ color: "#888" }}>{report.lastResult}</span>
+            <span className="label-mono" style={{ color: "#555" }}>Opp Last Result</span>
+            <span className="font-mono text-[13px]" style={{ color: "#888" }}>{report.lastResult}</span>
           </div>
           {report.wisconsinResult && (
             <div className="flex items-center gap-1.5 ml-auto">
-              <span className="label-mono" style={{ color: "#333" }}>vs Wisconsin</span>
+              <span className="label-mono" style={{ color: "#555" }}>vs Wisconsin</span>
               <span
                 className="font-display font-600 text-sm px-2 py-0.5 rounded"
                 style={{
@@ -192,7 +192,7 @@ export default function ReportView({ report }: ReportViewProps) {
                 </span>
                 {report.setPieceTargets && (
                   <span
-                    className="font-mono text-[9px] ml-2"
+                    className="font-mono text-[13px] ml-2"
                     style={{ color: "#555" }}
                   >
                     Set piece targets:{" "}
@@ -250,8 +250,8 @@ export default function ReportView({ report }: ReportViewProps) {
             {/* Compiled by */}
             <div className="pb-2">
               <span
-                className="font-mono text-[9px] uppercase tracking-widest"
-                style={{ color: "#333" }}
+                className="font-mono text-[13px] uppercase tracking-widest"
+                style={{ color: "#555" }}
               >
                 Compiled by {report.compiledBy}
               </span>

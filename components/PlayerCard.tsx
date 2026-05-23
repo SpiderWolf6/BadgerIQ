@@ -39,7 +39,7 @@ export default function PlayerCard({ player }: PlayerCardProps) {
             {player.name}
           </span>
           <span
-            className="font-mono text-[9px] uppercase tracking-wider flex-shrink-0"
+            className="font-mono text-[13px] uppercase tracking-wider flex-shrink-0"
             style={{ color: "#555" }}
           >
             {player.position}

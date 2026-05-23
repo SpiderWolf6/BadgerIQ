@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * Topbar — persistent top navigation bar.
+ *
+ * Shows the BadgerIQ logo, main tab navigation, the current season indicator,
+ * the signed-in user's first name (from the Google session), and a sign-out button.
+ * Disabled tabs show a "soon" label and trigger a toast instead of navigating.
+ */
+
 import Image from "next/image";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -12,9 +20,9 @@ interface TopbarProps {
 }
 
 export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
-  const [toast, setToast] = useState(false);
-  const { data: session } = useSession();
-  const firstName = session?.user?.name?.split(" ")[0] ?? null;
+  const [toast, setToast]       = useState(false);
+  const { data: session }       = useSession();
+  const firstName               = session?.user?.name?.split(" ")[0] ?? null;
 
   async function handleLogout() {
     await signOut({ callbackUrl: "/login" });
@@ -26,10 +34,10 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
   }
 
   const tabs: { id: TopbarTab; label: string; disabled: boolean }[] = [
-    { id: "reports", label: "Reports", disabled: false },
-    { id: "stats", label: "Stats Corner", disabled: false },
-    { id: "players", label: "Players", disabled: true },
-    { id: "aichat", label: "AI Chat", disabled: true },
+    { id: "reports", label: "Reports",      disabled: false },
+    { id: "stats",   label: "Stats Corner", disabled: false },
+    { id: "players", label: "Players",      disabled: true },
+    { id: "aichat",  label: "AI Chat",      disabled: true },
   ];
 
   return (
@@ -44,12 +52,8 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
             <Image src="/logo.png" alt="Wisconsin Badgers W" fill className="object-contain" priority />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display font-700 text-lg leading-none" style={{ color: "#c5050c", letterSpacing: "0.04em" }}>
-              BADGER
-            </span>
-            <span className="font-display font-600 text-lg leading-none" style={{ color: "#e8e8ea", letterSpacing: "0.04em" }}>
-              IQ
-            </span>
+            <span className="font-display font-700 text-lg leading-none" style={{ color: "#c5050c", letterSpacing: "0.04em" }}>BADGER</span>
+            <span className="font-display font-600 text-lg leading-none" style={{ color: "#e8e8ea", letterSpacing: "0.04em" }}>IQ</span>
           </div>
         </div>
 
@@ -67,6 +71,7 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
             >
               {tab.label}
               {tab.disabled && <span className="ml-1 font-mono text-[12px]" style={{ color: "#555" }}>soon</span>}
+              {/* active indicator underline */}
               {!tab.disabled && activeTab === tab.id && (
                 <span className="absolute bottom-0 left-3 right-3 h-px" style={{ background: "#c5050c" }} />
               )}
@@ -74,12 +79,13 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
           ))}
         </nav>
 
-        {/* Season indicator + logout */}
+        {/* Season indicator, greeting, sign out */}
         <div className="flex items-center gap-4 ml-auto">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#c5050c" }} />
             <span className="font-mono text-[13px] uppercase tracking-widest" style={{ color: "#444" }}>Fall 2025</span>
           </div>
+          {/* first name pulled from the Google OAuth session */}
           {firstName && (
             <span className="font-mono text-[13px]" style={{ color: "#444" }}>
               Hello, {firstName}
@@ -97,9 +103,12 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
         </div>
       </header>
 
+      {/* Coming soon toast */}
       {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded font-mono text-[13px] uppercase tracking-widest"
-          style={{ background: "#140406", border: "1px solid #c5050c33", color: "#888" }}>
+        <div
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded font-mono text-[13px] uppercase tracking-widest"
+          style={{ background: "#140406", border: "1px solid #c5050c33", color: "#888" }}
+        >
           Coming soon
         </div>
       )}

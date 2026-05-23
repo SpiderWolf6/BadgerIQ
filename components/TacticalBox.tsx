@@ -48,7 +48,7 @@ export default function TacticalBox({
             {inPossession.map((point, i) => (
               <li key={i} className="flex gap-2">
                 <span
-                  className="font-mono text-[9px] mt-0.5 flex-shrink-0"
+                  className="font-mono text-[13px] mt-0.5 flex-shrink-0"
                   style={{ color: "#c5050c" }}
                 >
                   →
@@ -82,7 +82,7 @@ export default function TacticalBox({
             {outOfPossession.map((point, i) => (
               <li key={i} className="flex gap-2">
                 <span
-                  className="font-mono text-[9px] mt-0.5 flex-shrink-0"
+                  className="font-mono text-[13px] mt-0.5 flex-shrink-0"
                   style={{ color: "#c5050c" }}
                 >
                   →

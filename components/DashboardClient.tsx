@@ -1,9 +1,20 @@
 "use client";
 
+/**
+ * DashboardClient — root layout for the main app shell.
+ *
+ * Renders the Topbar and switches between two main views:
+ *  - Reports: sidebar + report viewer (scouting PDFs from Supabase)
+ *  - Stats Corner: season stats and training analytics
+ *
+ * Players and AI Chat tabs exist in the nav but are disabled (coming soon).
+ */
+
 import { useState } from "react";
 import Topbar, { TopbarTab } from "@/components/Topbar";
 import Sidebar from "@/components/Sidebar";
 import ReportView from "@/components/ReportView";
+import StatsCorner from "@/components/stats/StatsCorner";
 import { Report } from "@/types/report";
 
 interface Props {
@@ -12,7 +23,7 @@ interface Props {
 
 export default function DashboardClient({ reports }: Props) {
   const [activeSlug, setActiveSlug] = useState(reports[0]?.slug ?? "");
-  const [activeTab, setActiveTab] = useState<TopbarTab>("reports");
+  const [activeTab, setActiveTab]   = useState<TopbarTab>("reports");
 
   const activeReport = reports.find((r) => r.slug === activeSlug) ?? reports[0];
 
@@ -21,7 +32,7 @@ export default function DashboardClient({ reports }: Props) {
       <Topbar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar only shown on Reports tab */}
+        {/* Sidebar only visible on the Reports tab */}
         {activeTab === "reports" && (
           <Sidebar reports={reports} activeSlug={activeSlug} onSelect={setActiveSlug} />
         )}
@@ -38,7 +49,7 @@ export default function DashboardClient({ reports }: Props) {
               </div>
             )
           )}
-          {activeTab === "stats" && null}
+          {activeTab === "stats" && <StatsCorner />}
         </main>
       </div>
     </div>

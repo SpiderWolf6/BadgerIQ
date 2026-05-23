@@ -67,7 +67,7 @@ export default function StatGrid({ stats }: StatGridProps) {
           </span>
           {item.note && (
             <span
-              className="font-mono text-[9px]"
+              className="font-mono text-[13px]"
               style={{ color: "#555" }}
             >
               {item.note}

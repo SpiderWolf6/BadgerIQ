@@ -71,14 +71,14 @@ export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps)
                     {entry.opponent}
                   </span>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-wider" style={{ color: "#444" }}>
+                    <span className="font-mono text-[13px] uppercase tracking-wider" style={{ color: "#444" }}>
                       {entry.matchDate}
                     </span>
-                    <span className="font-mono text-[9px]" style={{ color: resultColor(entry.wisconsinResult) }}>
+                    <span className="font-mono text-[13px]" style={{ color: resultColor(entry.wisconsinResult) }}>
                       {entry.wisconsinResult}
                     </span>
                   </div>
-                  <span className="label-mono" style={{ color: "#333" }}>
+                  <span className="label-mono" style={{ color: "#555" }}>
                     No report
                   </span>
                 </div>
@@ -115,19 +115,19 @@ export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps)
                   {report.opponent}
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[9px] uppercase tracking-wider" style={{ color: "#444" }}>
+                  <span className="font-mono text-[13px] uppercase tracking-wider" style={{ color: "#444" }}>
                     {report.matchDate}
                   </span>
                   {result && (
                     <span
-                      className="font-mono text-[9px] font-semibold"
+                      className="font-mono text-[13px] font-semibold"
                       style={{ color: resultColor(result) }}
                     >
                       {result}
                     </span>
                   )}
                 </div>
-                <span className="font-mono text-[9px] uppercase tracking-wider" style={{ color: "#333" }}>
+                <span className="font-mono text-[13px] uppercase tracking-wider" style={{ color: "#555" }}>
                   {report.record}
                 </span>
               </div>
@@ -139,7 +139,7 @@ export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps)
       {/* Footer */}
       <div className="p-3 border-t space-y-3" style={{ borderColor: "#1a1a1c" }}>
         <div>
-          <span className="label-mono block mb-1.5" style={{ color: "#333" }}>
+          <span className="label-mono block mb-1.5" style={{ color: "#555" }}>
             Season Overview
           </span>
           <div className="grid grid-cols-2 gap-1.5">
