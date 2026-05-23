@@ -13,7 +13,7 @@
 
 import { useState, useMemo } from "react";
 import { SeasonPlayer, TrainingSession, TrainingMetricKey, METRIC_LABELS } from "@/types/stats";
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend } from "recharts";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend, TooltipProps } from "recharts";
 
 interface Props {
   players: SeasonPlayer[];
@@ -37,6 +37,34 @@ const SEASON_METRICS: { key: keyof SeasonPlayer; label: string }[] = [
   { key: "dribblesP90",         label: "Drb/90" },
   { key: "progressiveRunsP90",  label: "ProgRun/90" },
 ];
+
+// description of each radar dimension shown in the hover tooltip
+const RADAR_DIM_INFO: Record<string, { metrics: string; note: string }> = {
+  Attack:     { metrics: "Goals/90, xG/90, Shots/90", note: "Attacking output and threat creation per 90 minutes" },
+  Defense:    { metrics: "Def Duels Won%, Interceptions/90", note: "Defensive effectiveness and ability to win the ball back" },
+  Aerial:     { metrics: "Aerial Duels Won%", note: "Success rate in aerial challenges" },
+  Passing:    { metrics: "Pass Accuracy%, Key Passes/90", note: "Passing quality and ability to create chances through distribution" },
+  Dribbling:  { metrics: "Dribbles/90, Dribble Success%", note: "Ability to beat opponents and win offensive duels" },
+  Discipline: { metrics: "Yellow Cards, Red Cards", note: "Discipline score — cards reduce this score (yellow: -15, red: -40)" },
+};
+
+// custom tooltip that fires when hovering over a radar dimension label
+function RadarTooltip({ active, payload }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+  const dim  = payload[0]?.payload?.dim as string;
+  const info = RADAR_DIM_INFO[dim];
+  if (!info) return null;
+  return (
+    <div
+      className="px-3 py-2 rounded max-w-xs"
+      style={{ background: "#0f0f11", border: "1px solid #1a1a1c", fontFamily: "var(--font-ibm-plex-mono)" }}
+    >
+      <div className="font-mono text-[11px] uppercase tracking-widest mb-1" style={{ color: "#c5050c" }}>{dim}</div>
+      <div className="font-mono text-[10px] mb-1" style={{ color: "#888" }}>{info.metrics}</div>
+      <div className="font-mono text-[10px]" style={{ color: "#555" }}>{info.note}</div>
+    </div>
+  );
+}
 
 /**
  * Build radar chart data for a player — each dimension is a 0-100 score
@@ -163,14 +191,15 @@ export default function CompareTab({ players, sessions }: Props) {
               {/* Radar overlay — relative scores 0-100 vs rest of squad */}
               <div>
                 <div className="label-mono mb-2" style={{ color: "#444" }}>Radar Comparison</div>
-                <div style={{ height: "220px" }}>
+                <div style={{ height: "240px" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={radarOverlay}>
                       <PolarGrid stroke="#1a1a1c" />
                       <PolarAngleAxis dataKey="dim" tick={{ fill: "#555", fontSize: 9, fontFamily: "var(--font-ibm-plex-mono)" }} />
+                      <Tooltip content={<RadarTooltip />} />
                       <Radar dataKey={playerA.split(" ").pop()!} stroke="#c5050c" fill="#c5050c" fillOpacity={0.15} />
                       <Radar dataKey={playerB.split(" ").pop()!} stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} />
-                      <Legend wrapperStyle={{ fontSize: 9, fontFamily: "var(--font-ibm-plex-mono)" }} />
+                      <Legend wrapperStyle={{ fontSize: 9, fontFamily: "var(--font-ibm-plex-mono)", marginTop: "12px", paddingTop: "8px" }} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
