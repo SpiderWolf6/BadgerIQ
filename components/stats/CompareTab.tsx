@@ -13,7 +13,7 @@
 
 import { useState, useMemo } from "react";
 import { SeasonPlayer, TrainingSession, TrainingMetricKey, METRIC_LABELS } from "@/types/stats";
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend, TooltipProps } from "recharts";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend } from "recharts";
 
 interface Props {
   players: SeasonPlayer[];
@@ -49,7 +49,7 @@ const RADAR_DIM_INFO: Record<string, { metrics: string; note: string }> = {
 };
 
 // custom tooltip that fires when hovering over a radar dimension label
-function RadarTooltip({ active, payload }: TooltipProps<number, string>) {
+function RadarTooltip({ active, payload }: { active?: boolean; payload?: { payload: { dim: string } }[] }) {
   if (!active || !payload?.length) return null;
   const dim  = payload[0]?.payload?.dim as string;
   const info = RADAR_DIM_INFO[dim];
