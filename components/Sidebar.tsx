@@ -1,14 +1,23 @@
 "use client";
 
 import { Report } from "@/types/report";
+import SeasonToggle from "@/components/SeasonToggle";
+import { REPORT_SEASONS, ReportSeason } from "@/lib/seasons";
 
 interface SidebarProps {
   reports: Report[];
   activeSlug: string;
   onSelect: (slug: string) => void;
+  season: ReportSeason;
+  onSeasonChange: (season: ReportSeason) => void;
 }
 
-// Maryland: no report, just a result entry
+const SEASON_OPTIONS = (Object.keys(REPORT_SEASONS) as ReportSeason[]).map((id) => ({
+  id,
+  label: REPORT_SEASONS[id].label,
+}));
+
+// Maryland (Fall 25): no report, just a result entry
 const MARYLAND_ENTRY = {
   slug: null,
   opponent: "Maryland Terrapins",
@@ -23,14 +32,14 @@ function resultColor(result: string) {
   return "#c5050c";
 }
 
-export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps) {
+export default function Sidebar({ reports, activeSlug, onSelect, season, onSeasonChange }: SidebarProps) {
   // Build combined list with Maryland injected at the top (earliest date)
   type SidebarEntry =
     | { type: "report"; report: Report }
     | { type: "no-report"; slug: null; opponent: string; matchDate: string; record: string; wisconsinResult: string };
 
   const entries: SidebarEntry[] = [
-    { type: "no-report" as const, ...MARYLAND_ENTRY },
+    ...(season === "fall25" ? [{ type: "no-report" as const, ...MARYLAND_ENTRY }] : []),
     ...reports.map((r) => ({ type: "report" as const, report: r })),
   ].sort((a, b) => {
     const dateA = a.type === "report" ? a.report.matchDate : (a as Extract<SidebarEntry, { type: "no-report" }>).matchDate;
@@ -45,15 +54,21 @@ export default function Sidebar({ reports, activeSlug, onSelect }: SidebarProps)
       className="flex flex-col shrink-0 overflow-hidden border-r"
       style={{ width: "220px", background: "#0d0d0e", borderColor: "#1a1a1c" }}
     >
-      {/* Section header */}
-      <div className="px-3 py-2.5 border-b" style={{ borderColor: "#1a1a1c" }}>
-        <span className="label-mono" style={{ color: "#444" }}>
+      {/* Season switcher + section header */}
+      <div className="px-3 py-2.5 border-b space-y-2" style={{ borderColor: "#1a1a1c" }}>
+        <SeasonToggle seasons={SEASON_OPTIONS} active={season} onChange={onSeasonChange} />
+        <span className="label-mono block" style={{ color: "#444" }}>
           Season Reports
         </span>
       </div>
 
       {/* Report list */}
       <nav className="flex-1 overflow-y-auto py-1">
+        {entries.length === 0 && (
+          <div className="px-3 py-2.5">
+            <span className="label-mono" style={{ color: "#555" }}>No reports yet</span>
+          </div>
+        )}
         {entries.map((entry) => {
           if (entry.type === "no-report") {
             // Maryland — no report, non-clickable

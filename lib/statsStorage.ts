@@ -1,8 +1,9 @@
 /**
  * Supabase storage layer for all stats data.
  *
- * Training sessions are stored as individual JSON files under stats/training/YYYY-MM-DD.json.
- * Season stats live as a single Excel file at stats/season/season_stats.xlsx (Wyscout export).
+ * Every path is scoped to a season folder (see lib/seasons.ts):
+ *   stats/{season}/training/YYYY-MM-DD.json   one JSON per training session
+ *   stats/{season}/season/season_stats.xlsx   Wyscout season export
  *
  * Uses the service role key so it can both read and write from server-side routes.
  * Never import this in client components.
@@ -11,6 +12,11 @@
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 import { TrainingSession, SeasonPlayer } from "@/types/stats";
+import { STATS_SEASONS, StatsSeason } from "@/lib/seasons";
+
+function trainingDir(season: StatsSeason): string {
+  return `${STATS_SEASONS[season].dir}/training`;
+}
 
 function getSupabase() {
   // Service role key gives full read/write access — only used server-side
@@ -23,14 +29,15 @@ function getSupabase() {
 // training sessions
 
 /** Fetch and parse every training session JSON from Supabase storage. */
-export async function getAllSessions(): Promise<TrainingSession[]> {
+export async function getAllSessions(season: StatsSeason): Promise<TrainingSession[]> {
   const supabase = getSupabase();
+  const dir = trainingDir(season);
 
   // List all files in the training folder; limit 1000 to ensure we don't miss any
   // (Supabase paginates at lower limits by default)
   const { data: files, error } = await supabase.storage
     .from("stats")
-    .list("training", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+    .list(dir, { limit: 1000, sortBy: { column: "name", order: "asc" } });
 
   if (error || !files) {
     console.error("Failed to list training files:", error);
@@ -44,7 +51,7 @@ export async function getAllSessions(): Promise<TrainingSession[]> {
     jsonFiles.map(async (f) => {
       const { data, error } = await supabase.storage
         .from("stats")
-        .download(`training/${f.name}`);
+        .download(`${dir}/${f.name}`);
       if (error || !data) return null;
       const text = await data.text();
       return JSON.parse(text) as TrainingSession;
@@ -58,13 +65,13 @@ export async function getAllSessions(): Promise<TrainingSession[]> {
  * Return the most recent session date string (YYYY-MM-DD) stored in Supabase.
  * Used by the sync route to know where to start fetching new data from.
  */
-export async function getLatestSessionDate(): Promise<string | null> {
+export async function getLatestSessionDate(season: StatsSeason): Promise<string | null> {
   const supabase = getSupabase();
 
   // Sort descending so the first result is the newest file
   const { data: files, error } = await supabase.storage
     .from("stats")
-    .list("training", { limit: 1000, sortBy: { column: "name", order: "desc" } });
+    .list(trainingDir(season), { limit: 1000, sortBy: { column: "name", order: "desc" } });
 
   if (error || !files) return null;
 
@@ -76,14 +83,14 @@ export async function getLatestSessionDate(): Promise<string | null> {
 }
 
 /** Write a single session JSON to Supabase, overwriting if it already exists. */
-export async function uploadSession(session: TrainingSession): Promise<void> {
+export async function uploadSession(season: StatsSeason, session: TrainingSession): Promise<void> {
   const supabase = getSupabase();
   const content = JSON.stringify(session, null, 2);
   const blob = new Blob([content], { type: "application/json" });
 
   const { error } = await supabase.storage
     .from("stats")
-    .upload(`training/${session.date}.json`, blob, { upsert: true });
+    .upload(`${trainingDir(season)}/${session.date}.json`, blob, { upsert: true });
 
   if (error) throw new Error(`Failed to upload ${session.date}.json: ${error.message}`);
 }
@@ -107,15 +114,18 @@ function s(v: unknown): string {
  * Column indices are based on the Wyscout export format — do not reorder columns
  * in the spreadsheet or these indices will break.
  */
-export async function getSeasonPlayers(): Promise<SeasonPlayer[]> {
+export async function getSeasonPlayers(season: StatsSeason): Promise<SeasonPlayer[]> {
+  // seasons without a Wyscout export yet (e.g. Fall 26) show "Coming soon"
+  if (!STATS_SEASONS[season].hasSeasonStats) return [];
+
   const supabase = getSupabase();
 
   const { data, error } = await supabase.storage
     .from("stats")
-    .download("season/season_stats.xlsx");
+    .download(`${STATS_SEASONS[season].dir}/season/season_stats.xlsx`);
 
   if (error || !data) {
-    console.error("Failed to fetch season_stats.xlsx:", error);
+    console.error(`Failed to fetch ${season} season_stats.xlsx:`, error);
     return [];
   }
 

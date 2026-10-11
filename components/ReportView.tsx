@@ -6,14 +6,16 @@ import StatGrid from "./StatGrid";
 import TacticalBox from "./TacticalBox";
 import PlayerCard from "./PlayerCard";
 import ExploitZone from "./ExploitZone";
+import { ReportSeason, DEFAULT_REPORT_SEASON } from "@/lib/seasons";
 
 type ViewMode = "parsed" | "pdf";
 
 interface ReportViewProps {
   report: Report;
+  season?: ReportSeason; // which season's pdf folder to load from
 }
 
-export default function ReportView({ report }: ReportViewProps) {
+export default function ReportView({ report, season = DEFAULT_REPORT_SEASON }: ReportViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("parsed");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -24,7 +26,7 @@ export default function ReportView({ report }: ReportViewProps) {
     setPdfUrl(null);
     setPdfError(false);
     setViewMode("parsed");
-  }, [report.slug]);
+  }, [report.slug, season]);
 
   async function handlePdfView() {
     setViewMode("pdf");
@@ -32,7 +34,7 @@ export default function ReportView({ report }: ReportViewProps) {
     setPdfLoading(true);
     setPdfError(false);
     try {
-      const res = await fetch(`/api/pdf/${report.slug}`);
+      const res = await fetch(`/api/pdf/${report.slug}?season=${season}`);
       const data = await res.json();
       if (data.url) {
         setPdfUrl(data.url);

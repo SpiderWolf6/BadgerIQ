@@ -11,13 +11,21 @@
  *  5. Return all sessions (old + new) so the UI can update immediately
  *
  * Days with no training data are silently skipped — the API returns an empty array.
+ *
+ * ARCHIVED: VXSport was the Spring 26 data source. The team moved to PlayerData
+ * for Fall 26, so the UI no longer calls this route. Kept (pinned to Spring 26
+ * storage) in case VXSport is needed again.
  */
 
 import { NextResponse } from "next/server";
 import { getLatestSessionDate, uploadSession, getAllSessions } from "@/lib/statsStorage";
+import { StatsSeason } from "@/lib/seasons";
 import { TrainingSession } from "@/types/stats";
 
 export const dynamic = "force-dynamic";
+
+// VXSport data lives in the Spring 26 season folder
+const SEASON: StatsSeason = "spring26";
 
 // VXSport returns distances in meters; we display in miles
 const M_TO_MI = 0.000621371;
@@ -105,7 +113,7 @@ function dateRange(start: string, end: string): string[] {
 
 export async function POST() {
   try {
-    const latestDate = await getLatestSessionDate();
+    const latestDate = await getLatestSessionDate(SEASON);
     if (!latestDate) {
       return NextResponse.json({ error: "No existing sessions found" }, { status: 400 });
     }
@@ -115,7 +123,7 @@ export async function POST() {
 
     // Nothing to fetch — already up to date
     if (!datesToFetch.length) {
-      const sessions = await getAllSessions();
+      const sessions = await getAllSessions(SEASON);
       return NextResponse.json({ ok: true, newSessions: 0, sessions });
     }
 
@@ -150,12 +158,12 @@ export async function POST() {
       if (!rows.length) continue;
 
       const session = buildSession(date, rows);
-      await uploadSession(session);
+      await uploadSession(SEASON, session);
       newSessions.push(session);
     }
 
     // Return the full updated session list so the UI refreshes in one round trip
-    const sessions = await getAllSessions();
+    const sessions = await getAllSessions(SEASON);
     return NextResponse.json({ ok: true, newSessions: newSessions.length, sessions });
   } catch (e) {
     console.error("Sync error:", e);

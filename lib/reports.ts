@@ -1,5 +1,6 @@
 import { Report } from "@/types/report";
 import { createClient } from "@supabase/supabase-js";
+import { REPORT_SEASONS, ReportSeason, DEFAULT_REPORT_SEASON } from "@/lib/seasons";
 
 const JSON_FILENAMES: Record<string, string> = {
   washington: "washington.json",
@@ -22,44 +23,37 @@ function getSupabase() {
   );
 }
 
-export async function getAllReports(): Promise<Report[]> {
+/** Download and parse one report JSON from the season's json folder. */
+async function downloadReport(season: ReportSeason, filename: string): Promise<Report | null> {
   const supabase = getSupabase();
-
-  const results = await Promise.all(
-    SLUGS.map(async (slug) => {
-      const filename = JSON_FILENAMES[slug];
-      const { data, error } = await supabase.storage
-        .from("reports")
-        .download(`json_25-26/${filename}`);
-
-      if (error || !data) {
-        console.error(`Failed to fetch ${filename}:`, error);
-        return null;
-      }
-
-      const text = await data.text();
-      const report = JSON.parse(text) as Report;
-      return report;
-    })
-  );
-
-  return results.filter(Boolean) as Report[];
-}
-
-export async function getReport(slug: string): Promise<Report | undefined> {
-  const supabase = getSupabase();
-  const filename = JSON_FILENAMES[slug];
-  if (!filename) return undefined;
-
   const { data, error } = await supabase.storage
     .from("reports")
-    .download(`json_25-26/${filename}`);
+    .download(`${REPORT_SEASONS[season].jsonDir}/${filename}`);
 
   if (error || !data) {
-    console.error(`Failed to fetch ${filename}:`, error);
-    return undefined;
+    console.error(`Failed to fetch ${season}/${filename}:`, error);
+    return null;
   }
 
   const text = await data.text();
   return JSON.parse(text) as Report;
+}
+
+export async function getAllReports(season: ReportSeason = DEFAULT_REPORT_SEASON): Promise<Report[]> {
+  // seasons without reports yet (e.g. Fall 26) render a "Coming soon" page instead
+  if (!REPORT_SEASONS[season].available) return [];
+
+  const results = await Promise.all(
+    SLUGS.map((slug) => downloadReport(season, JSON_FILENAMES[slug]))
+  );
+  return results.filter(Boolean) as Report[];
+}
+
+export async function getReport(
+  slug: string,
+  season: ReportSeason = DEFAULT_REPORT_SEASON
+): Promise<Report | undefined> {
+  const filename = JSON_FILENAMES[slug];
+  if (!filename || !REPORT_SEASONS[season].available) return undefined;
+  return (await downloadReport(season, filename)) ?? undefined;
 }

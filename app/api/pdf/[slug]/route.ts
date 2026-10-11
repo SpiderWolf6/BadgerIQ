@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { REPORT_SEASONS, DEFAULT_REPORT_SEASON, isReportSeason } from "@/lib/seasons";
 
 const PDF_FILENAMES: Record<string, string> = {
   washington: "Washington_Scouting_Report.pdf",
@@ -14,11 +15,15 @@ const PDF_FILENAMES: Record<string, string> = {
 };
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { slug: string } }
 ) {
+  // ?season=fall25 (default) picks which season's pdf folder to read from
+  const seasonParam = new URL(req.url).searchParams.get("season");
+  const season = isReportSeason(seasonParam) ? seasonParam : DEFAULT_REPORT_SEASON;
+
   const filename = PDF_FILENAMES[params.slug];
-  if (!filename) {
+  if (!filename || !REPORT_SEASONS[season].available) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -29,7 +34,7 @@ export async function GET(
 
   const { data, error } = await supabase.storage
     .from("reports")
-    .createSignedUrl(`pdfs_25-26/${filename}`, 60 * 60);
+    .createSignedUrl(`${REPORT_SEASONS[season].pdfDir}/${filename}`, 60 * 60);
 
   if (error || !data?.signedUrl) {
     console.error("[pdf api] slug:", params.slug, "file:", filename, "error:", error);

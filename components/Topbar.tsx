@@ -17,9 +17,10 @@ export type TopbarTab = "reports" | "stats" | "players" | "aichat";
 interface TopbarProps {
   activeTab: TopbarTab;
   onTabChange: (tab: TopbarTab) => void;
+  seasonLabel: string; // season currently being viewed, e.g. "Fall 2025"
 }
 
-export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
+export default function Topbar({ activeTab, onTabChange, seasonLabel }: TopbarProps) {
   const [toast, setToast]       = useState(false);
   const { data: session }       = useSession();
   const firstName               = session?.user?.name?.split(" ")[0] ?? null;
@@ -83,7 +84,7 @@ export default function Topbar({ activeTab, onTabChange }: TopbarProps) {
         <div className="flex items-center gap-4 ml-auto">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#c5050c" }} />
-            <span className="font-mono text-[13px] uppercase tracking-widest" style={{ color: "#444" }}>Fall 2025</span>
+            <span className="font-mono text-[13px] uppercase tracking-widest" style={{ color: "#444" }}>{seasonLabel}</span>
           </div>
           {/* first name pulled from the Google OAuth session */}
           {firstName && (
