@@ -1,38 +1,48 @@
 "use client";
 
 /**
- * TrainingTab — VXSport GPS session viewer.
+ * TrainingTab — GPS session viewer (VXSport for Spring 26, PlayerData for Fall 26).
  *
  * Two sections:
- *  1. Session timeline — dots for each training date; clicking one expands a
- *     full player table with load scores and all GPS metrics for that session.
+ *  1. Session timeline — dots for each training date (with any segment/tag
+ *     labels underneath); clicking one expands a full player table with load
+ *     scores and all GPS metrics for that session.
  *  2. Player trends — select up to 8 players and a metric to see a line chart
  *     of their values across every session.
+ *
+ * Which metrics appear, their labels/units, and the load color bands come from
+ * the season's TrainingDisplayConfig (lib/trainingDisplay.ts).
  */
 
 import { useState, useMemo } from "react";
-import { TrainingSession, TrainingMetricKey, METRIC_LABELS, METRIC_UNITS } from "@/types/stats";
+import { TrainingSession, TrainingMetricKey } from "@/types/stats";
+import { TrainingDisplayConfig, loadColor, loadBg } from "@/lib/trainingDisplay";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-interface Props { sessions: TrainingSession[]; }
-
-// load score color thresholds — green ≥ 60, amber ≥ 30, red below
-function loadColor(score: number): string {
-  if (score >= 60) return "#22c55e";
-  if (score >= 30) return "#f59e0b";
-  return "#c5050c";
-}
-
-function loadBg(score: number): string {
-  if (score >= 60) return "#0a1a0e";
-  if (score >= 30) return "#1a1408";
-  return "#140406";
+interface Props {
+  sessions: TrainingSession[];
+  display:  TrainingDisplayConfig;
 }
 
 // up to 8 players can be selected for the trend chart
 const PLAYER_COLORS = ["#c5050c", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ec4899", "#14b8a6", "#f97316"];
 
-export default function TrainingTab({ sessions }: Props) {
+/** Segment names + tags for a session, e.g. ["Full 90"]; empty for VXSport sessions. */
+function sessionLabels(s: TrainingSession): string[] {
+  return Array.from(new Set([...(s.segments ?? []), ...(s.tags ?? [])]));
+}
+
+/** "18:00:00" → "18:00" */
+function hhmm(t?: string): string {
+  return t ? t.slice(0, 5) : "";
+}
+
+export default function TrainingTab({ sessions, display }: Props) {
+  const playerColor = (score: number) => loadColor(score, display.playerLoad);
+  const playerBg    = (score: number) => loadBg(score, display.playerLoad);
+  const sessionColor = (score: number) => loadColor(score, display.sessionLoad);
+  const sessionBg    = (score: number) => loadBg(score, display.sessionLoad);
+
   const [expandedSession, setExpandedSession] = useState<string | null>(sessions[0]?.sessionId ?? null);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [trendMetric, setTrendMetric] = useState<"loadScore" | TrainingMetricKey>("loadScore");
@@ -44,16 +54,27 @@ export default function TrainingTab({ sessions }: Props) {
     return Array.from(set).sort();
   }, [sessions]);
 
-  // all metric keys that actually appear in the data (some may be missing for older sessions)
+  // chip label per player — last name, or "C. Smith" style when two share a last name
+  const chipLabels = useMemo(() => {
+    const last = (n: string) => n.split(" ").pop() ?? n;
+    const counts = new Map<string, number>();
+    allPlayers.forEach((n) => counts.set(last(n), (counts.get(last(n)) ?? 0) + 1));
+    return new Map(allPlayers.map((n) => [
+      n,
+      (counts.get(last(n)) ?? 0) > 1 ? `${n[0]}. ${last(n)}` : last(n),
+    ]));
+  }, [allPlayers]);
+
+  // configured metrics that actually appear in the data, in configured order
   const allMetrics = useMemo(() => {
-    const set = new Set<TrainingMetricKey>();
+    const present = new Set<TrainingMetricKey>();
     sessions.forEach((s) =>
       s.players.forEach((p) =>
-        Object.keys(p.metrics).forEach((k) => set.add(k as TrainingMetricKey))
+        Object.keys(p.metrics).forEach((k) => present.add(k as TrainingMetricKey))
       )
     );
-    return Array.from(set);
-  }, [sessions]);
+    return display.metrics.filter((m) => present.has(m.key));
+  }, [sessions, display]);
 
   // one data point per session per selected player for the trend chart
   const trendData = useMemo(() => {
@@ -61,11 +82,9 @@ export default function TrainingTab({ sessions }: Props) {
       const row: Record<string, string | number> = { date: s.displayDate };
       selectedPlayers.forEach((name) => {
         const p = s.players.find((pl) => pl.name === name);
-        if (p) {
-          row[name] = trendMetric === "loadScore"
-            ? p.loadScore
-            : (p.metrics[trendMetric as TrainingMetricKey] ?? 0) as number;
-        }
+        if (!p) return; // absent that day → gap in the line
+        const val = trendMetric === "loadScore" ? p.loadScore : p.metrics[trendMetric];
+        if (val != null) row[name] = val; // not recorded → gap, not a fake 0
       });
       return row;
     });
@@ -98,15 +117,26 @@ export default function TrainingTab({ sessions }: Props) {
               onClick={() => setExpandedSession(expandedSession === s.sessionId ? null : s.sessionId)}
               className="flex flex-col items-center gap-1 px-3 py-2 rounded transition-colors"
               style={{
-                background: expandedSession === s.sessionId ? loadBg(s.sessionLoadScore) : "#0f0f11",
-                border: `1px solid ${expandedSession === s.sessionId ? loadColor(s.sessionLoadScore) + "66" : "#1a1a1c"}`,
+                background: expandedSession === s.sessionId ? sessionBg(s.sessionLoadScore) : "#0f0f11",
+                border: `1px solid ${expandedSession === s.sessionId ? sessionColor(s.sessionLoadScore) + "66" : "#1a1a1c"}`,
               }}
             >
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: loadColor(s.sessionLoadScore) }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: sessionColor(s.sessionLoadScore) }} />
               <span className="font-mono text-[12px]" style={{ color: "#555" }}>{s.displayDate}</span>
-              <span className="font-display font-600 text-xs" style={{ color: loadColor(s.sessionLoadScore) }}>
+              <span className="font-display font-600 text-xs" style={{ color: sessionColor(s.sessionLoadScore) }}>
                 {s.sessionLoadScore}
               </span>
+              {/* segment / tag labels, only on sessions that have them */}
+              {sessionLabels(s).map((label) => (
+                <span
+                  key={label}
+                  className="font-mono text-[10px] uppercase tracking-wider px-1.5 rounded max-w-[96px] truncate"
+                  style={{ color: "#c5050c", background: "#140406", border: "1px solid #c5050c33" }}
+                  title={label}
+                >
+                  {label}
+                </span>
+              ))}
             </button>
           ))}
         </div>
@@ -117,24 +147,38 @@ export default function TrainingTab({ sessions }: Props) {
             {/* Header */}
             <div
               className="px-4 py-3 flex items-center justify-between"
-              style={{ background: loadBg(expandedSesh.sessionLoadScore), borderBottom: "1px solid #1a1a1c" }}
+              style={{ background: sessionBg(expandedSesh.sessionLoadScore), borderBottom: "1px solid #1a1a1c" }}
             >
-              <div>
+              <div className="flex items-center flex-wrap gap-y-1">
                 <span className="font-display font-700 text-sm" style={{ color: "#e8e8ea" }}>
                   {expandedSesh.displayDate} Session
                 </span>
                 <span className="font-mono text-[13px] ml-3" style={{ color: "#555" }}>
                   {expandedSesh.players.length} players
                 </span>
+                {expandedSesh.startTime && (
+                  <span className="font-mono text-[13px] ml-3" style={{ color: "#555" }}>
+                    {hhmm(expandedSesh.startTime)}–{hhmm(expandedSesh.endTime)}
+                  </span>
+                )}
+                {sessionLabels(expandedSesh).map((label) => (
+                  <span
+                    key={label}
+                    className="font-mono text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded ml-3"
+                    style={{ color: "#c5050c", background: "#0a0a0b", border: "1px solid #c5050c33" }}
+                  >
+                    {label}
+                  </span>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <span className="label-mono" style={{ color: "#444" }}>Session Load</span>
                 <span
                   className="font-display font-700 text-xl px-3 py-0.5 rounded"
                   style={{
-                    color: loadColor(expandedSesh.sessionLoadScore),
+                    color: sessionColor(expandedSesh.sessionLoadScore),
                     background: "#0a0a0b",
-                    border: `1px solid ${loadColor(expandedSesh.sessionLoadScore)}33`,
+                    border: `1px solid ${sessionColor(expandedSesh.sessionLoadScore)}33`,
                   }}
                 >
                   {expandedSesh.sessionLoadScore}
@@ -151,12 +195,11 @@ export default function TrainingTab({ sessions }: Props) {
                     <th className="text-left px-4 py-2 label-mono" style={{ color: "#555" }}>Player</th>
                     <th className="text-left px-3 py-2 label-mono" style={{ color: "#555" }}>Pos</th>
                     <th className="px-3 py-2 label-mono text-center" style={{ color: "#555" }}>Load</th>
-                    {expandedSesh.players[0] &&
-                      Object.keys(expandedSesh.players[0].metrics).map((k) => (
-                        <th key={k} className="px-3 py-2 label-mono text-center" style={{ color: "#555" }}>
-                          {METRIC_LABELS[k as TrainingMetricKey]}
-                        </th>
-                      ))}
+                    {allMetrics.map((m) => (
+                      <th key={m.key} className="px-3 py-2 label-mono text-center" style={{ color: "#555" }}>
+                        {m.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -179,25 +222,28 @@ export default function TrainingTab({ sessions }: Props) {
                         <span
                           className="font-display font-700 text-sm px-2 py-0.5 rounded"
                           style={{
-                            color: loadColor(p.loadScore),
-                            background: loadBg(p.loadScore),
-                            border: `1px solid ${loadColor(p.loadScore)}33`,
+                            color: playerColor(p.loadScore),
+                            background: playerBg(p.loadScore),
+                            border: `1px solid ${playerColor(p.loadScore)}33`,
                           }}
                         >
                           {p.loadScore}
                         </span>
                       </td>
-                      {Object.entries(p.metrics).map(([k, val]) => (
-                        <td key={k} className="px-3 py-2.5 text-center">
-                          <div className="font-mono text-[12px]" style={{ color: "#888" }}>
-                            {/* show 2 decimal places for floats, raw value for integers */}
-                            {val != null
-                              ? (typeof val === "number" && !Number.isInteger(val) ? val.toFixed(2) : val)
-                              : "—"}{" "}
-                            <span style={{ color: "#555" }}>{METRIC_UNITS[k as TrainingMetricKey]}</span>
-                          </div>
-                        </td>
-                      ))}
+                      {allMetrics.map((m) => {
+                        const val = p.metrics[m.key];
+                        return (
+                          <td key={m.key} className="px-3 py-2.5 text-center">
+                            <div className="font-mono text-[12px]" style={{ color: "#888" }}>
+                              {/* show 2 decimal places for floats, raw value for integers */}
+                              {val != null
+                                ? (!Number.isInteger(val) ? val.toFixed(2) : val)
+                                : "—"}{" "}
+                              {val != null && <span style={{ color: "#555" }}>{m.unit}</span>}
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>
@@ -215,7 +261,7 @@ export default function TrainingTab({ sessions }: Props) {
 
         {/* Metric selector */}
         <div className="flex gap-1.5 flex-wrap mb-3">
-          {[{ key: "loadScore", label: "Load Score" }, ...allMetrics.map((k) => ({ key: k, label: METRIC_LABELS[k] }))].map((m) => (
+          {[{ key: "loadScore", label: "Load Score" }, ...allMetrics.map((m) => ({ key: m.key, label: m.label }))].map((m) => (
             <button
               key={m.key}
               onClick={() => setTrendMetric(m.key as "loadScore" | TrainingMetricKey)}
@@ -231,7 +277,7 @@ export default function TrainingTab({ sessions }: Props) {
           ))}
         </div>
 
-        {/* Player selector — shows last name only to save space */}
+        {/* Player selector — last name only to save space ("C. Smith" when last names collide) */}
         <div className="flex gap-1.5 flex-wrap mb-4">
           {allPlayers.map((name) => {
             const isSelected = selectedPlayers.includes(name);
@@ -247,7 +293,7 @@ export default function TrainingTab({ sessions }: Props) {
                   color: isSelected ? "#e8e8ea" : "#555",
                 }}
               >
-                {name.split(" ").pop()}
+                {chipLabels.get(name)}
               </button>
             );
           })}

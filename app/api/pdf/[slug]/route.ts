@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { REPORT_SEASONS, DEFAULT_REPORT_SEASON, isReportSeason } from "@/lib/seasons";
 
 const PDF_FILENAMES: Record<string, string> = {
@@ -27,10 +27,8 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // never cached — a cached response would hand out signed URLs that expired hours ago
+  const supabase = getSupabaseAdmin();
 
   const { data, error } = await supabase.storage
     .from("reports")

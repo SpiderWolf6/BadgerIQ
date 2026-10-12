@@ -4,10 +4,11 @@
 
 interface Props {
   title: string;     // e.g. "Fall 26 Reports"
+  status?: string;   // headline under the title (default "Coming soon")
   detail?: string;   // optional second line
 }
 
-export default function ComingSoon({ title, detail }: Props) {
+export default function ComingSoon({ title, status = "Coming soon", detail }: Props) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-2 px-6 text-center">
       <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#c5050c" }} />
@@ -15,7 +16,7 @@ export default function ComingSoon({ title, detail }: Props) {
         {title}
       </span>
       <span className="font-mono text-[12px] uppercase tracking-widest" style={{ color: "#555" }}>
-        Coming soon
+        {status}
       </span>
       {detail && (
         <span className="font-mono text-[12px] max-w-sm" style={{ color: "#444" }}>

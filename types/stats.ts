@@ -2,7 +2,8 @@
  * Shared TypeScript types for all stats data.
  *
  * SeasonPlayer — Wyscout season stats (one row per player from the XLSX export).
- * TrainingSession — VXSport GPS session data (one file per training day from the API).
+ * TrainingSession — GPS session data, one file per training day
+ *   (Spring 26: VXSport API; Fall 26: PlayerData CSV exports).
  */
 
 // season stats (Wyscout XLSX)
@@ -75,13 +76,18 @@ export interface SeasonPlayer {
   duelsWonPct: number;
 }
 
-// training sessions (VXSport API)
+// training sessions
+//
+// Both sources share one JSON shape (TrainingSession) but use different metric
+// keys and units — see lib/trainingDisplay.ts for per-season labels/units.
+//   Spring 26: VXSport API    — VxsportMetricKey, miles / km/h
+//   Fall 26:   PlayerData CSV — PlayerDataMetricKey, yards / mph
 
 /**
- * Keys for per-player training metrics.
+ * VXSport (Spring 26) per-player metric keys.
  * Distance fields are in miles; speeds in km/h; duration in seconds; counts are raw integers.
  */
-export type TrainingMetricKey =
+export type VxsportMetricKey =
   | "totalDistance"        // total GPS distance (mi)
   | "distanceHISpeed"      // distance above high-intensity speed threshold (mi)
   | "sprintsHI"            // high-intensity speed sprint count
@@ -93,7 +99,29 @@ export type TrainingMetricKey =
   | "activityLoad3D"       // 3D activity load (VXSport proprietary measure)
   | "metabolicEnergyCost"; // total metabolic energy expenditure (kJ)
 
-export const METRIC_LABELS: Record<TrainingMetricKey, string> = {
+/**
+ * PlayerData (Fall 26) per-player metric keys — native units from the CSV export.
+ * Distances in yards; speeds in mph; duration in minutes; counts are raw integers.
+ */
+export type PlayerDataMetricKey =
+  | "durationMin"          // session duration (min) — the session window, not the athlete's capture time
+  | "totalDistance"        // Distance (yds)
+  | "yardsPerMinute"       // Yards per Minute (yds/min)
+  | "hiRunningDistance"    // High Intensity Running (yds)
+  | "hiEvents"             // No. of High Intensity Events
+  | "sprintDistance"       // Sprint Distance (yds)
+  | "sprintCount"          // No. of Sprints
+  | "topSpeed"             // Top Speed (mph)
+  | "pctMaxSpeed"          // Percentage of Max Speed (% of the athlete's own max)
+  | "avgSpeed"             // Avg Speed (mph)
+  | "accelerations"        // Accelerations
+  | "decelerations";       // Decelerations
+
+/** Any metric key from either source. */
+export type TrainingMetricKey = VxsportMetricKey | PlayerDataMetricKey;
+
+// VXSport labels/units — still used by the Spring 26 Compare tab
+export const METRIC_LABELS: Record<VxsportMetricKey, string> = {
   totalDistance:       "Total Distance",
   distanceHISpeed:     "HI Distance",
   sprintsHI:           "Sprints HI",
@@ -106,7 +134,7 @@ export const METRIC_LABELS: Record<TrainingMetricKey, string> = {
   metabolicEnergyCost: "Metabolic Cost",
 };
 
-export const METRIC_UNITS: Record<TrainingMetricKey, string> = {
+export const METRIC_UNITS: Record<VxsportMetricKey, string> = {
   totalDistance:       "mi",
   distanceHISpeed:     "mi",
   sprintsHI:           "",
@@ -119,13 +147,24 @@ export const METRIC_UNITS: Record<TrainingMetricKey, string> = {
   metabolicEnergyCost: "kJ",
 };
 
+/** A coach-tagged segment inside a session (PlayerData only), e.g. "Full 90". */
+export interface PlayerSegment {
+  name:      string;
+  startTime: string; // "HH:MM:SS"
+  endTime:   string;
+  loadScore: number | null;
+  metrics:   Partial<Record<TrainingMetricKey, number | null>>;
+}
+
 export interface PlayerSessionData {
+  personId?: string;   // PlayerData Person ID — stable athlete key (Fall 26+)
   name: string;
   position: string;
-  group: string;       // positional group e.g. "Attack", "Midfield", "Defense", "Goalkeeper"
+  group: string;       // positional group e.g. "Defenders", "Central MF", "Goalkeepers"
   sessions: number;
-  loadScore: number;   // VXSport load score for this session
-  metrics: Partial<Record<TrainingMetricKey, number | null>>;
+  loadScore: number;   // source's load score for this session (VXSport ~0–100, PlayerData ~0–3000)
+  metrics: Partial<Record<TrainingMetricKey, number | null>>; // null = not recorded
+  segments?: PlayerSegment[]; // PlayerData only, when the session has tagged segments
 }
 
 export interface TrainingSession {
@@ -134,4 +173,12 @@ export interface TrainingSession {
   displayDate:      string; // short label e.g. "Jan 26"
   sessionLoadScore: number; // average load score across all players in the session
   players:          PlayerSessionData[];
+  // PlayerData (Fall 26+) only — absent on Spring 26 VXSport files
+  source?:      "vxsport" | "playerdata";
+  startTime?:   string;   // "HH:MM:SS"
+  endTime?:     string;
+  durationMin?: number;
+  segments?:    string[]; // segment names in start order, e.g. ["Full 90"]
+  tags?:        string[]; // values from the export's Tags column
+  sourceFile?:  string;   // export file the session was parsed from, e.g. "export1.csv"
 }

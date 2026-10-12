@@ -1,5 +1,5 @@
 import { Report } from "@/types/report";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { REPORT_SEASONS, ReportSeason, DEFAULT_REPORT_SEASON } from "@/lib/seasons";
 
 const JSON_FILENAMES: Record<string, string> = {
@@ -17,10 +17,8 @@ const JSON_FILENAMES: Record<string, string> = {
 const SLUGS = Object.keys(JSON_FILENAMES);
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // edited report JSONs show up within 5 minutes (matches the dashboard's revalidate)
+  return getSupabaseAdmin({ revalidate: 300 });
 }
 
 /** Download and parse one report JSON from the season's json folder. */

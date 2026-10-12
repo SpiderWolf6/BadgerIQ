@@ -49,8 +49,8 @@ export interface StatsSeasonConfig {
 export const STATS_SEASONS: Record<StatsSeason, StatsSeasonConfig> = {
   // Spring 26 is archived VXSport data — no more syncing
   spring26: { label: "Spring 26", fullLabel: "Spring 2026", dir: "spring26", hasSeasonStats: true },
-  // Fall 26 is PlayerData CSV exports — sync endpoint added with the parser
-  fall26:   { label: "Fall 26",   fullLabel: "Fall 2026",   dir: "fall26",   hasSeasonStats: false },
+  // Fall 26 is PlayerData CSV exports pulled from Google Drive (lib/playerdata/)
+  fall26:   { label: "Fall 26",   fullLabel: "Fall 2026",   dir: "fall26",   hasSeasonStats: false, syncEndpoint: "/api/stats/fall26/sync" },
 };
 
 export const DEFAULT_STATS_SEASON: StatsSeason = "spring26";

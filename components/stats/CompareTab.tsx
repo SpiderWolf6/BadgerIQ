@@ -12,7 +12,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { SeasonPlayer, TrainingSession, TrainingMetricKey, METRIC_LABELS } from "@/types/stats";
+import { SeasonPlayer, TrainingSession, VxsportMetricKey, METRIC_LABELS } from "@/types/stats";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend } from "recharts";
 
 interface Props {
@@ -88,7 +88,7 @@ export default function CompareTab({ players, sessions }: Props) {
   const [mode, setMode]           = useState<Mode>("1v1");
   const [playerA, setPlayerA]     = useState<string>(players[0]?.name ?? "");
   const [playerB, setPlayerB]     = useState<string>(players[1]?.name ?? "");
-  const [multiMetric, setMultiMetric] = useState<"loadScore" | TrainingMetricKey>("loadScore");
+  const [multiMetric, setMultiMetric] = useState<"loadScore" | VxsportMetricKey>("loadScore");
 
   const pA = players.find((p) => p.name === playerA);
   const pB = players.find((p) => p.name === playerB);
@@ -121,7 +121,7 @@ export default function CompareTab({ players, sessions }: Props) {
         if (p) {
           const val = multiMetric === "loadScore"
             ? p.loadScore
-            : (p.metrics[multiMetric as TrainingMetricKey] ?? null) as number | null;
+            : (p.metrics[multiMetric as VxsportMetricKey] ?? null) as number | null;
           if (val !== null) { total += val; count++; }
         }
       });
@@ -254,7 +254,7 @@ export default function CompareTab({ players, sessions }: Props) {
               {[{ key: "loadScore", label: "Load Score" }, ...Object.entries(METRIC_LABELS).map(([k, l]) => ({ key: k, label: l }))].map((m) => (
                 <button
                   key={m.key}
-                  onClick={() => setMultiMetric(m.key as "loadScore" | TrainingMetricKey)}
+                  onClick={() => setMultiMetric(m.key as "loadScore" | VxsportMetricKey)}
                   className="px-2.5 py-1 rounded font-mono text-[13px] uppercase tracking-wider"
                   style={{
                     background: multiMetric === m.key ? "#140406" : "#0f0f11",
@@ -271,7 +271,7 @@ export default function CompareTab({ players, sessions }: Props) {
           {/* Ranked horizontal bar chart — height grows with player count so all names fit */}
           <div>
             <div className="label-mono mb-2" style={{ color: "#444" }}>
-              Season Average — {multiMetric === "loadScore" ? "Load Score" : METRIC_LABELS[multiMetric as TrainingMetricKey]}
+              Season Average — {multiMetric === "loadScore" ? "Load Score" : METRIC_LABELS[multiMetric as VxsportMetricKey]}
             </div>
             <div style={{ height: `${Math.max(300, multiData.length * 28)}px` }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -281,7 +281,7 @@ export default function CompareTab({ players, sessions }: Props) {
                   <YAxis type="category" dataKey="name" interval={0} tick={{ fill: "#888", fontSize: 10, fontFamily: "var(--font-ibm-plex-mono)" }} axisLine={false} tickLine={false} width={80} />
                   <Tooltip
                     contentStyle={{ background: "#0f0f11", border: "1px solid #1a1a1c", borderRadius: 4, fontSize: 11 }}
-                    formatter={(v) => [typeof v === "number" ? v.toFixed(2) : v, multiMetric === "loadScore" ? "Load Score" : METRIC_LABELS[multiMetric as TrainingMetricKey]]}
+                    formatter={(v) => [typeof v === "number" ? v.toFixed(2) : v, multiMetric === "loadScore" ? "Load Score" : METRIC_LABELS[multiMetric as VxsportMetricKey]]}
                     labelFormatter={(l) => multiData.find((d) => d.name === l)?.fullName ?? l}
                   />
                   <Bar dataKey="avg" radius={[0, 2, 2, 0]}>

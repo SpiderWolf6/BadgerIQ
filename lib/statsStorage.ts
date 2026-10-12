@@ -9,8 +9,8 @@
  * Never import this in client components.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { TrainingSession, SeasonPlayer } from "@/types/stats";
 import { STATS_SEASONS, StatsSeason } from "@/lib/seasons";
 
@@ -19,11 +19,8 @@ function trainingDir(season: StatsSeason): string {
 }
 
 function getSupabase() {
-  // Service role key gives full read/write access — only used server-side
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // service role key (read/write), never cached — stats files change after every sync
+  return getSupabaseAdmin();
 }
 
 // training sessions
@@ -82,17 +79,65 @@ export async function getLatestSessionDate(season: StatsSeason): Promise<string 
   return jsonFiles[0].name.replace(".json", "");
 }
 
-/** Write a single session JSON to Supabase, overwriting if it already exists. */
-export async function uploadSession(season: StatsSeason, session: TrainingSession): Promise<void> {
+/** Dates (YYYY-MM-DD) that already have a session JSON stored for the season. */
+export async function listSessionDates(season: StatsSeason): Promise<Set<string>> {
+  const supabase = getSupabase();
+  const { data: files, error } = await supabase.storage
+    .from("stats")
+    .list(trainingDir(season), { limit: 1000 });
+
+  if (error || !files) throw new Error(`Failed to list ${season} training files: ${error?.message}`);
+
+  return new Set(
+    files
+      .filter((f) => f.name.match(/^\d{4}-\d{2}-\d{2}\.json$/))
+      .map((f) => f.name.replace(".json", ""))
+  );
+}
+
+/**
+ * Write a single session JSON to Supabase.
+ * By default overwrites an existing file. With `overwrite: false` an existing
+ * file is left untouched and the call returns false (used by the Fall 26 sync,
+ * where a date is only ever written the first time it's processed).
+ */
+export async function uploadSession(
+  season: StatsSeason,
+  session: TrainingSession,
+  { overwrite = true }: { overwrite?: boolean } = {}
+): Promise<boolean> {
   const supabase = getSupabase();
   const content = JSON.stringify(session, null, 2);
   const blob = new Blob([content], { type: "application/json" });
 
   const { error } = await supabase.storage
     .from("stats")
-    .upload(`${trainingDir(season)}/${session.date}.json`, blob, { upsert: true });
+    .upload(`${trainingDir(season)}/${session.date}.json`, blob, { upsert: overwrite });
 
-  if (error) throw new Error(`Failed to upload ${session.date}.json: ${error.message}`);
+  if (error) {
+    // another sync wrote this date first — not an error when overwrite is off
+    if (!overwrite && /exist|duplicate/i.test(error.message)) return false;
+    throw new Error(`Failed to upload ${session.date}.json: ${error.message}`);
+  }
+  return true;
+}
+
+// generic JSON files in the stats bucket (e.g. the Fall 26 processed-exports log)
+
+/** Read and parse a JSON file from the stats bucket; null if it doesn't exist. */
+export async function readStatsJson<T>(path: string): Promise<T | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.storage.from("stats").download(path);
+  if (error || !data) return null;
+  return JSON.parse(await data.text()) as T;
+}
+
+/** Write a JSON file to the stats bucket, overwriting it. */
+export async function writeStatsJson(path: string, value: unknown): Promise<void> {
+  const supabase = getSupabase();
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+  const { error } = await supabase.storage.from("stats").upload(path, blob, { upsert: true });
+  if (error) throw new Error(`Failed to write ${path}: ${error.message}`);
 }
 
 // season stats (Wyscout XLSX)

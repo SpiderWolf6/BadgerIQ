@@ -16,6 +16,7 @@
 import { useState, useEffect } from "react";
 import { SeasonPlayer, TrainingSession } from "@/types/stats";
 import { STATS_SEASONS, StatsSeason } from "@/lib/seasons";
+import { TRAINING_DISPLAY } from "@/lib/trainingDisplay";
 import SeasonToggle from "@/components/SeasonToggle";
 import ComingSoon from "@/components/ComingSoon";
 import SeasonTab from "./SeasonTab";
@@ -84,9 +85,19 @@ export default function StatsCorner({ season, onSeasonChange }: Props) {
       const res  = await fetch(config.syncEndpoint, { method: "POST" });
       const data = await res.json();
       if (data.sessions) setSessions(data.sessions);
-      setLastSync(`${new Date().toLocaleTimeString()} · ${data.newSessions ?? 0} new`);
+
+      // full details (warnings, skipped dates) go to the browser console
+      if (data.warnings?.length || data.failedFiles?.length || data.error) console.warn("Sync report:", data);
+
+      if (!res.ok) {
+        setLastSync(`failed — ${data.error ?? res.status}`);
+      } else {
+        const failed = data.failedFiles?.length ? ` · ${data.failedFiles.length} file(s) failed` : "";
+        setLastSync(`${new Date().toLocaleTimeString()} · ${data.newSessions ?? 0} new${failed}`);
+      }
     } catch (e) {
       console.error("Sync failed:", e);
+      setLastSync("failed — network error");
     } finally {
       setSyncing(false);
     }
@@ -121,7 +132,8 @@ export default function StatsCorner({ season, onSeasonChange }: Props) {
       return (
         <ComingSoon
           title={`${config.fullLabel} Training`}
-          detail={canSync ? "No sessions yet — hit Refresh to pull new exports." : "No sessions found."}
+          status="No sessions yet"
+          detail={canSync ? "Hit Refresh to pull new exports from Drive." : undefined}
         />
       );
     }
@@ -130,7 +142,7 @@ export default function StatsCorner({ season, onSeasonChange }: Props) {
     return (
       <div key={season} className="h-full">
         {subTab === "season"   && <SeasonTab players={players} />}
-        {subTab === "training" && <TrainingTab sessions={sessions} />}
+        {subTab === "training" && <TrainingTab sessions={sessions} display={TRAINING_DISPLAY[season]} />}
         {subTab === "compare"  && <CompareTab players={players} sessions={sessions} />}
       </div>
     );
